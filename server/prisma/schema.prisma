@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hashed password
+  createdAt DateTime @default(now())
+  
+  results   DailyPuzzleResult[]
+}
+
+model DailyPuzzleResult {
+  id         String   @id @default(uuid())
+  userId     String
+  date       String   // ISO YYYY-MM-DD
+  score      Int
+  time       Int      // in seconds
+  puzzleType String
+  
+  user       User     @relation(fields: [userId], references: [id])
+  
+  @@unique([userId, date]) // Ensure upsert by day
+}

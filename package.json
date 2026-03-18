@@ -1,0 +1,11 @@
+{
+  "name": "daily-puzzle-game",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd client && npm run dev",
+    "server": "cd server && npm run dev",
+    "install:all": "cd client && npm i --legacy-peer-deps && cd ../server && npm i",
+    "db:push": "cd server && npx prisma db push"
+  }
+}
