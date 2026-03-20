@@ -8,6 +8,7 @@ import { GlobalModal } from './components/GlobalModal';
 import { DailyOverview } from './pages/DailyOverview';
 import { useAuthStore } from './store/authStore';
 import { useStreakStore } from './store/streakStore';
+import { syncOfflineResults } from './services/syncService';
 import { useEffect } from 'react';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -27,6 +28,7 @@ function App() {
   useEffect(() => {
     if (user) {
         loadStreak(user.id);
+        syncOfflineResults();
     }
   }, [user, loadStreak]);
 

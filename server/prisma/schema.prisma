@@ -26,5 +26,5 @@ model DailyPuzzleResult {
   
   user       User     @relation(fields: [userId], references: [id])
   
-  @@unique([userId, date]) // Ensure upsert by day
+  @@unique([userId, date, puzzleType]) // Ensure upsert by day AND puzzle type
 }

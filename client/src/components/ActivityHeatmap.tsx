@@ -63,7 +63,7 @@ const ActivityHeatmap: React.FC = () => {
 
     const scoreMap = new Map<string, number>();
     scores.forEach(s => {
-      scoreMap.set(s.date, s.score);
+      scoreMap.set(s.date, (scoreMap.get(s.date) || 0) + s.score);
     });
 
     daysInYear.forEach(d => {

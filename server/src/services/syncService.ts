@@ -23,9 +23,10 @@ export const saveDailyScore = async (
   // Upsert the puzzle result for the day
   return await prisma.dailyPuzzleResult.upsert({
     where: {
-      userId_date: {
+      userId_date_puzzleType: {
         userId,
-        date
+        date,
+        puzzleType
       }
     },
     update: {
