@@ -1,9 +1,11 @@
 import { create } from 'zustand';
+import { useAuthStore } from './authStore';
 
 interface StreakState {
   currentStreak: number;
   lastSolvedDate: string | null;
   updateStreak: (date: string) => void;
+  loadStreak: (userId: string) => void;
 }
 
 // Helper to determine if dates are consecutive days
@@ -15,27 +17,30 @@ function isYesterday(lastDateStr: string, currentDateStr: string): boolean {
   curr.setHours(0, 0, 0, 0);
   
   const diffTime = Math.abs(curr.getTime() - last.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
   
   return diffDays === 1;
 }
 
-// In a real app we'd load this from local storage or backend
-const initialStreakStr = typeof window !== 'undefined' ? localStorage.getItem('puzzleStreak') : null;
-let initialStreak = 0;
-let initialLastDate = null;
-if (initialStreakStr) {
-    try {
-        const parsed = JSON.parse(initialStreakStr);
-        initialStreak = parsed.currentStreak || 0;
-        initialLastDate = parsed.lastSolvedDate || null;
-    } catch(e) {}
-}
-
 export const useStreakStore = create<StreakState>((set, get) => ({
-  currentStreak: initialStreak,
-  lastSolvedDate: initialLastDate,
+  currentStreak: 0,
+  lastSolvedDate: null,
   
+  loadStreak: (userId: string) => {
+    const key = `puzzleStreak_${userId}`;
+    const initialStreakStr = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+    let initialStreak = 0;
+    let initialLastDate = null;
+    if (initialStreakStr) {
+        try {
+            const parsed = JSON.parse(initialStreakStr);
+            initialStreak = parsed.currentStreak || 0;
+            initialLastDate = parsed.lastSolvedDate || null;
+        } catch(e) {}
+    }
+    set({ currentStreak: initialStreak, lastSolvedDate: initialLastDate });
+  },
+
   updateStreak: (date: string) => {
     const state = get();
     
@@ -61,8 +66,9 @@ export const useStreakStore = create<StreakState>((set, get) => ({
     });
     
     // Persist
+    const userId = useAuthStore.getState().user?.id || 'guest';
     if (typeof window !== 'undefined') {
-        localStorage.setItem('puzzleStreak', JSON.stringify({
+        localStorage.setItem(`puzzleStreak_${userId}`, JSON.stringify({
             currentStreak: newStreak,
             lastSolvedDate: date
         }));

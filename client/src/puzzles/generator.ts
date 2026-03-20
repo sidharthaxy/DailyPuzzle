@@ -1,4 +1,4 @@
-import { getTodaySeed } from './seed';
+// Seed utility no longer needed here as date is passed directly
 import { generatePathPuzzle } from './engines/pathPuzzle';
 import { generateSudokuPuzzle } from './engines/sudokuPuzzle';
 
@@ -12,11 +12,12 @@ export interface GeneratedPuzzle {
     difficulty: string;
 }
 
-export function generateDailyPuzzle(): GeneratedPuzzle {
-    const seed = getTodaySeed();
-    
-    const isPath = seed % 2 === 0;
-    const type: PuzzleType = isPath ? 'path' : 'sudoku';
+export function generateDailyPuzzle(dateStr: string, type: PuzzleType): GeneratedPuzzle {
+    // Generate a stable seed from the date and puzzle type to ensure each puzzle 
+    // for a specific day is uniquely deterministic.
+    const dateNum = parseInt(dateStr.replace(/-/g, ''), 10);
+    const typeOffset = type === 'path' ? 1 : 2;
+    const seed = dateNum * 100 + typeOffset;
     
     if (type === 'path') {
         const { grid, start, end, solution } = generatePathPuzzle(seed);

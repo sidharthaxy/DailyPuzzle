@@ -26,7 +26,7 @@ export const Dashboard = () => {
     return (
         <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto', fontFamily: 'sans-serif' }}>
             <h1>Puzzle Dashboard</h1>
-            <p>Select today's puzzle to play. Past puzzles are view-only.</p>
+            <p>Select today's puzzle to play. Past puzzles are unscored.</p>
             <div style={{ display: 'grid', gap: '10px' }}>
                 {dates.map(d => (
                     <div key={d.date} style={{
@@ -35,12 +35,12 @@ export const Dashboard = () => {
                         border: '1px solid #e0e0e0',
                         boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                         backgroundColor: d.status === 'today' ? '#e0fee0' : d.status === 'past' ? '#f9f9f9' : '#f0f0f0',
-                        cursor: d.status === 'today' ? 'pointer' : 'default',
+                        cursor: (d.status === 'today' || d.status === 'past') ? 'pointer' : 'default',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center'
                     }} onClick={() => {
-                        if (d.status === 'today') navigate('/puzzle');
+                        if (d.status === 'today' || d.status === 'past') navigate(`/daily/${d.date}`);
                     }}>
                         <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{d.date}</span>
                         <span style={{

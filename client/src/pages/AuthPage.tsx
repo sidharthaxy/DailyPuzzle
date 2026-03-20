@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useModalStore } from '../store/modalStore';
 
 const AuthPage: React.FC = () => {
   const [isLoginView, setIsLoginView] = useState(true);
@@ -24,6 +25,11 @@ const AuthPage: React.FC = () => {
         await login(email, password);
       } else {
         await register(email, password);
+        useModalStore.getState().openModal({
+          type: 'success',
+          title: 'Account created successfully',
+          message: 'Welcome to your daily logic journey.'
+        });
       }
       navigate('/');
     } catch (err: any) {

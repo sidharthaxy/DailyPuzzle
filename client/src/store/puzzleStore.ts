@@ -3,6 +3,7 @@ import { savePuzzleProgress, loadPuzzleProgress } from '../db/indexeddb';
 import { generateDailyPuzzle, PuzzleType } from '../puzzles/generator';
 import { validatePuzzle } from '../puzzles/validator';
 import { useStreakStore } from './streakStore';
+import { useAuthStore } from './authStore';
 
 interface PuzzleState {
   date: string;
@@ -21,7 +22,7 @@ interface PuzzleState {
   isComplete: boolean;
   
   // Actions
-  initDailyPuzzle: () => Promise<void>;
+  initDailyPuzzle: (dateStr: string, type: PuzzleType) => Promise<void>;
   makeMove: (newState: any) => void;
   useHint: () => void;
   handlePuzzleCompletion: () => void;
@@ -45,19 +46,15 @@ export const usePuzzleStore = create<PuzzleState>((set, get) => {
     score: null,
     isComplete: false,
 
-    initDailyPuzzle: async () => {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const todayDate = `${year}-${month}-${day}`;
-      
-      const savedState = await loadPuzzleProgress(todayDate);
-      const generated = generateDailyPuzzle();
+    initDailyPuzzle: async (dateStr: string, type: PuzzleType) => {
+      const userId = useAuthStore.getState().user?.id || 'guest';
+      const stateKey = `${dateStr}_${type}_${userId}`;
+      const savedState = await loadPuzzleProgress(stateKey);
+      const generated = generateDailyPuzzle(dateStr, type);
       
       if (savedState) {
         set({
-          date: todayDate,
+          date: dateStr,
           puzzleType: generated.type,
           puzzleData: generated.puzzleData,
           solution: generated.solution,
@@ -74,12 +71,12 @@ export const usePuzzleStore = create<PuzzleState>((set, get) => {
         }
       } else {
         set({
-            date: todayDate,
+            date: dateStr,
             puzzleType: generated.type,
             puzzleData: generated.puzzleData,
             solution: generated.solution,
-            // Path needs empty array, sudoku needs empty grid matching puzzle layout
-            userState: generated.type === 'path' ? [] : JSON.parse(JSON.stringify(generated.puzzleData.grid)),
+            // Path needs start pos, sudoku needs empty grid matching puzzle layout
+            userState: generated.type === 'path' ? [generated.puzzleData.start] : JSON.parse(JSON.stringify(generated.puzzleData.grid)),
             timer: 0,
             hintsUsed: 0,
             isComplete: false,
@@ -99,20 +96,16 @@ export const usePuzzleStore = create<PuzzleState>((set, get) => {
       set({ userState: newState });
       
       const updatedState = get();
+      const userId = useAuthStore.getState().user?.id || 'guest';
       savePuzzleProgress({
-        date: updatedState.date,
+        date: `${updatedState.date}_${updatedState.puzzleType}_${userId}`,
         puzzleType: updatedState.puzzleType as string,
         moves: updatedState.userState,
         gridState: updatedState.userState,
         timer: updatedState.timer,
         hintsUsed: updatedState.hintsUsed
       });
-      
-      const isValid = validatePuzzle(updatedState.puzzleType!, updatedState.userState, updatedState.solution, updatedState.puzzleData);
-      
-      if (isValid) {
-        state.handlePuzzleCompletion();
-      }
+      // Manual submission only. No auto-submit.
     },
     
     useHint: () => {
@@ -158,36 +151,52 @@ export const usePuzzleStore = create<PuzzleState>((set, get) => {
       set({ userState: nextState, hintsUsed: state.hintsUsed + 1 });
       
       const updatedState = get();
+      const userId = useAuthStore.getState().user?.id || 'guest';
       savePuzzleProgress({
-        date: updatedState.date,
+        date: `${updatedState.date}_${updatedState.puzzleType}_${userId}`,
         puzzleType: updatedState.puzzleType as string,
         moves: updatedState.userState,
         gridState: updatedState.userState,
         timer: updatedState.timer,
         hintsUsed: updatedState.hintsUsed
       });
-      
-      const isValid = validatePuzzle(updatedState.puzzleType!, updatedState.userState, updatedState.solution, updatedState.puzzleData);
-      if (isValid) {
-        updatedState.handlePuzzleCompletion();
-      }
+      // Manual submission only. No auto-submit.
     },
     
     handlePuzzleCompletion: () => {
       set({ isRunning: false, isComplete: true });
       const state = get();
       
-      const baseScore = 100;
-      const timeMultiplier = Math.max(0, 60 - state.timer);
-      const hintPenalty = state.hintsUsed * 10;
-      const score = baseScore + timeMultiplier - hintPenalty;
+      const today = new Date().toISOString().split('T')[0];
+      const isToday = state.date === today;
+      
+      let score = 0;
+      if (isToday) {
+          const baseScore = 100;
+          const timeMultiplier = Math.max(0, 60 - state.timer);
+          const hintPenalty = state.hintsUsed * 10;
+          score = baseScore + timeMultiplier - hintPenalty;
+          
+          // Streak update trigger module (only for today's puzzle)
+          useStreakStore.getState().updateStreak(state.date);
+      }
       
       set({ score });
       
-      // Streak update trigger module
-      useStreakStore.getState().updateStreak(state.date);
-      
-      // Ideally trigger backend sync queue here
+      // Always trigger backend sync queue so the UI knows it was "Played" 
+      // even if the score is 0 due to being a past puzzle.
+      import('../db/indexeddb').then(db => {
+         const userId = useAuthStore.getState().user?.id || 'guest';
+         db.saveUnsyncedResult({
+             id: `${state.date}_${state.puzzleType}_${userId}`,
+             date: state.date,
+             score,
+             time: state.timer,
+             puzzleType: state.puzzleType!
+         }).then(() => {
+             import('../services/syncService').then(s => s.syncOfflineResults());
+         });
+      });
     },
     
     tickTimer: () => {

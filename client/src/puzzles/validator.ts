@@ -7,7 +7,7 @@ export function validatePuzzle(type: PuzzleType, userState: any, solution: any, 
         const grid = puzzleData?.grid;
         return validatePath(userState, solution, grid);
     } else if (type === 'sudoku') {
-        return validateSudoku(userState, solution);
+        return validateSudoku(userState);
     }
     return false;
 }

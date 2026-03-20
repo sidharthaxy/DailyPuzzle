@@ -2,10 +2,13 @@ import { getUnsyncedResults, markSynced } from '../db/indexeddb';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+import { useAuthStore } from '../store/authStore';
+
 export const syncOfflineResults = async () => {
   if (!navigator.onLine) return;
   
   const results = await getUnsyncedResults();
+  const userId = useAuthStore.getState().user?.id || 'guest';
   
   for (const result of results) {
     try {
@@ -15,7 +18,7 @@ export const syncOfflineResults = async () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: 'guest_user', // Fixed for demo, would be from Auth
+          userId,
           date: result.date,
           score: result.score,
           time: result.time,

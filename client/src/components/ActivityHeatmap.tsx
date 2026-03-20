@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { format, startOfDay, getYear, eachDayOfInterval, startOfYear, endOfYear, getMonth } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 interface HeatmapDay {
@@ -11,6 +12,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const ActivityHeatmap: React.FC = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [scores, setScores] = useState<{ date: string; score: number }[]>([]);
   
   const currentYear = getYear(new Date());
@@ -139,12 +141,12 @@ const ActivityHeatmap: React.FC = () => {
   const getColorClass = (count: number) => {
     switch (count) {
       case -1: return 'bg-transparent'; // padding cells
-      case 0: return 'bg-brand-100 dark:bg-brand-800';
+      case 0: return 'bg-gray-200 dark:bg-gray-700';
       case 1: return 'bg-brand-blue-200 dark:bg-brand-blue-600';
       case 2: return 'bg-brand-blue-300 dark:bg-brand-blue-500';
       case 3: return 'bg-brand-blue-400 dark:bg-brand-blue-400';
       case 4: return 'bg-brand-blue-600 dark:bg-brand-blue-300';
-      default: return 'bg-brand-100 dark:bg-brand-800';
+      default: return 'bg-gray-200 dark:bg-gray-700';
     }
   };
 
@@ -163,31 +165,41 @@ const ActivityHeatmap: React.FC = () => {
       <div className="flex-1 flex flex-col space-y-2 overflow-hidden">
         {/* Heatmap header: Month labels */}
         <div className="relative h-6 w-full hidden sm:block">
-          {monthLabels.map((label, i) => (
-             // Approximate width of a cell + gap is about 20px (w-4 + gap-1)
-            <div 
-              key={i} 
-              className="absolute text-xs text-gray-500 dark:text-gray-400"
-              style={{ left: `${label.weekIndex * (16 + 4)}px` }} 
-            >
-              {label.name}
-            </div>
-          ))}
+          {monthLabels.map((label, i) => {
+            const numNewMonthsPassed = monthLabels.filter(l => l.weekIndex > 0 && l.weekIndex <= label.weekIndex).length;
+            return (
+              <div 
+                key={i} 
+                className="absolute text-xs text-gray-500 dark:text-gray-400"
+                style={{ left: `${label.weekIndex * 20 + numNewMonthsPassed * 16}px` }} 
+              >
+                {label.name}
+              </div>
+            );
+          })}
         </div>
 
         {/* Heatmap Area */}
         <div className="flex gap-1 overflow-x-auto pb-4 custom-scrollbar">
-          {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex flex-col gap-1">
-              {week.map((day, dayIndex) => (
-                <div
-                  key={dayIndex}
-                  className={`w-4 h-4 rounded-sm ${getColorClass(day.count)} ${day.count !== -1 ? 'transition-all hover:ring-2 hover:ring-brand-blue-500 cursor-pointer' : ''}`}
-                  title={day.count !== -1 ? `${format(day.date, 'MMM d, yyyy')}: ${day.count} activities` : undefined}
-                />
-              ))}
-            </div>
-          ))}
+          {weeks.map((week, weekIndex) => {
+            const isNewMonth = weekIndex > 0 && monthLabels.some(l => l.weekIndex === weekIndex);
+            return (
+              <div key={weekIndex} className={`flex flex-col gap-1 ${isNewMonth ? 'ml-4' : ''}`}>
+                {week.map((day, dayIndex) => (
+                  <div
+                    key={dayIndex}
+                    className={`w-4 h-4 rounded-sm ${getColorClass(day.count)} ${day.count !== -1 ? 'transition-all hover:ring-2 hover:ring-brand-blue-500 cursor-pointer' : ''}`}
+                    title={day.count !== -1 ? `${format(day.date, 'MMM d, yyyy')}: ${day.count} activities` : undefined}
+                    onClick={() => {
+                       if (day.count !== -1) {
+                           navigate(`/daily/${format(day.date, 'yyyy-MM-dd')}`);
+                       }
+                    }}
+                  />
+                ))}
+              </div>
+            );
+          })}
         </div>
 
         {/* Heatmap Footer Legend */}

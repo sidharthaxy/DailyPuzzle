@@ -10,7 +10,7 @@ export interface PathPuzzleData {
 
 export function generatePathPuzzle(seed: number): PathPuzzleData {
   const rng = createSeededRandom(seed);
-  const size = 5;
+  const size = 9;
   
   let grid: string[][] = [];
   let start: Position = { r: 0, c: 0 };
@@ -22,7 +22,7 @@ export function generatePathPuzzle(seed: number): PathPuzzleData {
     grid[start.r][start.c] = 'S';
     grid[end.r][end.c] = 'E';
 
-    const numWalls = rng.randomInt(5, 8);
+    const numWalls = rng.randomInt(25, 35);
     let wallsPlaced = 0;
     while (wallsPlaced < numWalls) {
       const r = rng.randomInt(0, size - 1);
@@ -74,7 +74,7 @@ function findPath(grid: string[][], start: Position, end: Position): Position[] 
   return [];
 }
 
-export function validatePath(userMoves: Position[], solution: Position[], grid: string[][]): boolean {
+export function validatePath(userMoves: Position[], _solution: Position[], grid: string[][]): boolean {
   if (!userMoves || userMoves.length === 0) return false;
   
   const startPos = userMoves[0];
@@ -102,11 +102,7 @@ export function validatePath(userMoves: Position[], solution: Position[], grid: 
     }
   }
 
-  // Strictly check "path equals solution" as mentioned in requirement
-  if (userMoves.length !== solution.length) return false;
-  for (let i = 0; i < userMoves.length; i++) {
-     if (userMoves[i].r !== solution[i].r || userMoves[i].c !== solution[i].c) return false;
-  }
-  
+  // We no longer strictly check "path equals solution".
+  // As long as the user found A valid path to the end without hitting walls, it's correct!
   return true;
 }

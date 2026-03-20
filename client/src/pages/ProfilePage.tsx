@@ -3,11 +3,27 @@ import { useAuthStore } from '../store/authStore';
 import { useStreakStore } from '../store/streakStore';
 import { useNavigate } from 'react-router-dom';
 
+import { useState, useEffect } from 'react';
+
 export const ProfilePage = () => {
     const { user } = useAuthStore();
     const { currentStreak } = useStreakStore();
     const navigate = useNavigate();
-    const totalScore = 0; // Keeping zero initially as requested
+    const [totalScore, setTotalScore] = useState(0);
+
+    useEffect(() => {
+        if (!user || user.isGuest) return;
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        fetch(`${API_URL}/sync/daily-scores/${user.id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.scores) {
+                    const sum = data.scores.reduce((acc: number, item: any) => acc + item.score, 0);
+                    setTotalScore(sum);
+                }
+            })
+            .catch(err => console.error(err));
+    }, [user]);
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4">

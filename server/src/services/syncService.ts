@@ -47,6 +47,6 @@ export const getDailyScores = async (userId: string) => {
   return await prisma.dailyPuzzleResult.findMany({
     where: { userId },
     orderBy: { date: 'asc' },
-    select: { date: true, score: true }
+    select: { date: true, score: true, puzzleType: true }
   });
 };
