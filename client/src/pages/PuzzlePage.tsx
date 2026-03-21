@@ -56,7 +56,7 @@ export const PuzzlePage = () => {
     const renderPathGrid = () => {
         const grid = puzzleData.grid;
         return (
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${grid[0].length}, 50px)`, gap: '4px', justifyContent: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${grid[0].length}, minmax(0, 1fr))`, gap: 'min(4px, 1vw)', justifyContent: 'center', width: '100%', maxWidth: `${grid[0].length * 50}px`, margin: '0 auto' }}>
                 {grid.map((row: any, r: number) =>
                     row.map((cell: string, c: number) => {
                         const isPath = userState && userState.some((p: any) => p.r === r && p.c === c);
@@ -83,14 +83,14 @@ export const PuzzlePage = () => {
                                     }
                                 }}
                                 style={{
-                                    width: 50, height: 50,
-                                    borderRadius: 8,
+                                    width: '100%', aspectRatio: '1 / 1',
+                                    borderRadius: 'min(8px, 1.5vw)',
                                     backgroundColor: isWall ? '#374151' : isPath ? '#3b82f6' : '#f3f4f6',
                                     color: (isPath || isWall) ? 'white' : 'black',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 'bold', fontSize: 20,
+                                    fontWeight: 'bold', fontSize: 'clamp(12px, 4vw, 20px)',
                                     cursor: isWall || isComplete ? 'not-allowed' : 'pointer',
-                                    border: isStart || isEnd ? '2px solid #ef4444' : 'none'
+                                    border: isStart || isEnd ? 'max(2px, 0.5vw) solid #ef4444' : 'none'
                                 }}>
                                 {isStart ? 'S' : isEnd ? 'E' : ''}
                             </div>
@@ -103,7 +103,7 @@ export const PuzzlePage = () => {
 
     const renderSudokuGrid = () => {
         return (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 45px)', gap: '2px', justifyContent: 'center', backgroundColor: '#374151', padding: '4px', borderRadius: '8px', margin: '0 auto', width: 'fit-content' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, minmax(0, 1fr))', gap: 'min(2px, 0.5vw)', backgroundColor: '#374151', padding: 'min(4px, 1vw)', borderRadius: '8px', margin: '0 auto', width: '100%', maxWidth: '405px' }}>
                 {userState && userState.map((row: any, r: number) =>
                     row.map((cell: number | null, c: number) => {
                         const isGiven = puzzleData.grid[r][c] !== null;
@@ -123,14 +123,14 @@ export const PuzzlePage = () => {
                                     makeMove(newState);
                                 }}
                                 style={{
-                                    width: 45, height: 45, textAlign: 'center', fontSize: 20, fontWeight: isGiven ? 'bold' : 'normal',
+                                    width: '100%', aspectRatio: '1 / 1', textAlign: 'center', fontSize: 'clamp(14px, 5vw, 20px)', fontWeight: isGiven ? 'bold' : 'normal',
                                     backgroundColor: isGiven ? '#e5e7eb' : 'white',
                                     border: 'none',
-                                    borderBottom: isBottomThick ? '3px solid #374151' : 'none',
-                                    borderRight: isRightThick ? '3px solid #374151' : 'none',
+                                    borderBottom: isBottomThick ? 'min(3px, 0.8vw) solid #374151' : 'none',
+                                    borderRight: isRightThick ? 'min(3px, 0.8vw) solid #374151' : 'none',
                                     color: isGiven ? '#111827' : '#2563eb',
                                     cursor: isGiven || isComplete ? 'not-allowed' : 'text',
-                                    outline: 'none', appearance: 'textfield'
+                                    outline: 'none', appearance: 'textfield', padding: 0
                                 }}
                             />
                         )
@@ -192,7 +192,7 @@ export const PuzzlePage = () => {
                 {puzzleType === 'path' ? renderPathGrid() : renderSudokuGrid()}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 100, marginTop: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 'clamp(20px, 5vw, 100px)', marginTop: 20 }}>
                 {puzzleType === 'path' ? (
                     <button
                         disabled={isComplete}
