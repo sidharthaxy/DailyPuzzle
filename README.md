@@ -386,13 +386,7 @@ score = 100 + max(0, 60 - elapsed_seconds) - (hints_used × 10)
 - Node.js ≥ 18
 - A running PostgreSQL instance
 
-### 1. Install Dependencies
-From the project root, install both client and server packages in one command:
-```bash
-npm run install:all
-```
-
-### 2. Configure Environment Variables
+### 1. Configure Environment Variables
 In the `server/` directory, copy the example environment file and fill in your values:
 ```bash
 cd server
@@ -400,23 +394,52 @@ cp .env.example .env
 ```
 See [Environment Variables](#environment-variables) below for all required keys.
 
-### 3. Push the Database Schema
-Apply the Prisma schema to your PostgreSQL database:
+### 2. Install, Build & Migrate (Server)
+Run all setup steps in one command from the `server/` directory:
 ```bash
-npm run db:push
+cd server
+npm install && npx tsc && npx prisma generate && npx prisma db push
 ```
 
-### 4. Run the Application
-Start the backend (default port `8000`):
+This single chain:
+1. **`npm install`** — installs all server dependencies
+2. **`npx tsc`** — compiles TypeScript to `dist/`
+3. **`npx prisma generate`** — generates the Prisma client from `schema.prisma`
+4. **`npx prisma db push`** — applies the schema to your PostgreSQL database
+
+
+### 3. Start the Server
+From the `server/` directory:
 ```bash
-npm run server
-```
-In a separate terminal, start the frontend dev server (default port `5173`):
-```bash
-npm run dev
+npm start
 ```
 
-The app will be available at **http://localhost:5173**.
+---
+
+## Deployment
+
+### Server
+Deploy to any Node.js host (Railway, Render, Fly.io, etc.). Set environment variables on your host and run:
+```bash
+npm start
+```
+
+### Client (Vercel)
+The frontend is a static Vite build deployed to Vercel.
+
+**Step 1 — Set environment variables** in your Vercel project settings:
+
+| Variable | Value |
+|---|---|
+| `VITE_API_URL` | Your deployed backend URL (e.g. `https://your-server.railway.app`) |
+| `VITE_PUZZLE_SECRET` | Same secret used for puzzle seed derivation (optional) |
+
+**Step 2 — Configure build settings in Vercel:**
+- **Root Directory:** `client`
+- **Build Command:** `vite build`
+- **Output Directory:** `dist`
+
+Vercel will serve the built static files and route all paths to `index.html` to support client-side routing.
 
 ---
 
@@ -430,8 +453,8 @@ The app will be available at **http://localhost:5173**.
 | `PORT` | ❌ | HTTP port for the Express server (default: `8000`) |
 | `NODE_ENV` | ❌ | Set to `production` to enable secure cookies |
 
-### `client/.env` (optional)
+### `client` — Vercel Environment Variables
 | Variable | Required | Description |
 |---|---|---|
-| `VITE_API_URL` | ❌ | Backend API base URL (default: `http://localhost:8000`) |
+| `VITE_API_URL` | ✅ | Your deployed backend URL — the client uses this for all API calls |
 | `VITE_PUZZLE_SECRET` | ❌ | Secret appended to the date for SHA256 puzzle seed derivation (default: `puzzle_secret`) |
