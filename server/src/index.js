@@ -9,7 +9,7 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const syncRoutes_js_1 = __importDefault(require("./routes/syncRoutes.js"));
 const authRoutes_js_1 = __importDefault(require("./routes/authRoutes.js"));
 const app = (0, express_1.default)();
-app.use((0, cors_1.default)({ origin: 'http://localhost:5173', credentials: true })); // Needs explicit origin for cookies
+app.use((0, cors_1.default)({ origin: process.env.CLIENT_URL, credentials: true })); // Needs explicit origin for cookies
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 app.use('/auth', authRoutes_js_1.default);
