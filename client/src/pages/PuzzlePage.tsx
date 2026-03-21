@@ -39,6 +39,18 @@ export const PuzzlePage = () => {
         return () => clearInterval(interval);
     }, [isRunning, isComplete, tickTimer]);
 
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (puzzleType === 'sudoku' && isRunning && !isComplete) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [puzzleType, isRunning, isComplete]);
+
     if (!puzzleType) return <div style={{ padding: 20 }}>Loading Daily Puzzle...</div>;
 
     const renderPathGrid = () => {
@@ -130,7 +142,21 @@ export const PuzzlePage = () => {
 
     return (
         <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto', textAlign: 'center', fontFamily: 'sans-serif' }}>
-            <button onClick={() => navigate(`/daily/${searchParams.get('date') || new Date().toISOString().split('T')[0]}`)} style={{ marginBottom: 20, padding: '8px 16px' }}>&larr; Back to Puzzles</button>
+            <button onClick={() => {
+                const goBack = () => navigate(`/daily/${searchParams.get('date') || new Date().toISOString().split('T')[0]}`);
+                if (puzzleType === 'sudoku' && isRunning && !isComplete) {
+                    useModalStore.getState().openModal({
+                        type: 'confirm',
+                        title: 'Leave Puzzle?',
+                        message: 'For anti-cheat reasons, Sudoku progress is not saved. If you leave now, your puzzle will be reset. Are you sure you want to leave?',
+                        confirmText: 'Leave',
+                        cancelText: 'Cancel',
+                        onConfirm: goBack
+                    });
+                } else {
+                    goBack();
+                }
+            }} style={{ marginBottom: 20, padding: '8px 16px' }}>&larr; Back to Puzzles</button>
 
             <h1 style={{ fontSize: '2rem', marginBottom: '10px' }}>Today's Puzzle</h1>
             <h2 style={{ color: '#6b7280', marginBottom: '30px', textTransform: 'capitalize' }}>{puzzleType} Challenge</h2>

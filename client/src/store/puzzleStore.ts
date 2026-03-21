@@ -49,7 +49,7 @@ export const usePuzzleStore = create<PuzzleState>((set, get) => {
     initDailyPuzzle: async (dateStr: string, type: PuzzleType) => {
       const userId = useAuthStore.getState().user?.id || 'guest';
       const stateKey = `${dateStr}_${type}_${userId}`;
-      const savedState = await loadPuzzleProgress(stateKey);
+      const savedState = type === 'sudoku' ? undefined : await loadPuzzleProgress(stateKey);
       const generated = generateDailyPuzzle(dateStr, type);
       
       if (savedState) {
@@ -97,14 +97,17 @@ export const usePuzzleStore = create<PuzzleState>((set, get) => {
       
       const updatedState = get();
       const userId = useAuthStore.getState().user?.id || 'guest';
-      savePuzzleProgress({
-        date: `${updatedState.date}_${updatedState.puzzleType}_${userId}`,
-        puzzleType: updatedState.puzzleType as string,
-        moves: updatedState.userState,
-        gridState: updatedState.userState,
-        timer: updatedState.timer,
-        hintsUsed: updatedState.hintsUsed
-      });
+      
+      if (updatedState.puzzleType !== 'sudoku') {
+        savePuzzleProgress({
+          date: `${updatedState.date}_${updatedState.puzzleType}_${userId}`,
+          puzzleType: updatedState.puzzleType as string,
+          moves: updatedState.userState,
+          gridState: updatedState.userState,
+          timer: updatedState.timer,
+          hintsUsed: updatedState.hintsUsed
+        });
+      }
       // Manual submission only. No auto-submit.
     },
     
@@ -152,14 +155,17 @@ export const usePuzzleStore = create<PuzzleState>((set, get) => {
       
       const updatedState = get();
       const userId = useAuthStore.getState().user?.id || 'guest';
-      savePuzzleProgress({
-        date: `${updatedState.date}_${updatedState.puzzleType}_${userId}`,
-        puzzleType: updatedState.puzzleType as string,
-        moves: updatedState.userState,
-        gridState: updatedState.userState,
-        timer: updatedState.timer,
-        hintsUsed: updatedState.hintsUsed
-      });
+      
+      if (updatedState.puzzleType !== 'sudoku') {
+        savePuzzleProgress({
+          date: `${updatedState.date}_${updatedState.puzzleType}_${userId}`,
+          puzzleType: updatedState.puzzleType as string,
+          moves: updatedState.userState,
+          gridState: updatedState.userState,
+          timer: updatedState.timer,
+          hintsUsed: updatedState.hintsUsed
+        });
+      }
       // Manual submission only. No auto-submit.
     },
     
