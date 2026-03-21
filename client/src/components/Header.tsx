@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { usePuzzleStore } from '../store/puzzleStore';
+import { useModalStore } from '../store/modalStore';
 
 export const Header = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { puzzleType, isRunning, isComplete } = usePuzzleStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -23,11 +27,26 @@ export const Header = () => {
     };
   }, [isDropdownOpen]);
 
+  const handleNavigation = (action: () => void) => {
+    if (location.pathname === '/puzzle' && puzzleType === 'sudoku' && isRunning && !isComplete) {
+        useModalStore.getState().openModal({
+            type: 'confirm',
+            title: 'Leave Puzzle?',
+            message: 'For anti-cheat reasons, Sudoku progress is not saved. If you leave now, your puzzle will be reset. Are you sure you want to leave?',
+            confirmText: 'Leave',
+            cancelText: 'Cancel',
+            onConfirm: action
+        });
+    } else {
+        action();
+    }
+  };
+
   return (
     <header className="px-6 py-4 border-b border-brand-blue-200 bg-brand-50 flex justify-between items-center shadow-sm relative z-50">
       <div 
         className="cursor-pointer"
-        onClick={() => navigate('/')}
+        onClick={() => handleNavigation(() => navigate('/'))}
       >
         <h1 className="text-2xl font-extrabold bg-gradient-to-b from-brand-blue-600 via-brand-blue-400 to-brand-blue-600 bg-clip-text text-transparent">
           DailyPuzzle
@@ -46,10 +65,10 @@ export const Header = () => {
           {isDropdownOpen && (
             <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-100 py-2 top-full overflow-hidden">
               <div 
-                onClick={() => {
+                onClick={() => handleNavigation(() => {
                   setIsDropdownOpen(false);
                   navigate('/profile');
-                }}
+                })}
                 className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
                 role="button"
               >
@@ -84,10 +103,10 @@ export const Header = () => {
               
               <div className="py-1 border-t border-gray-100">
                 <button 
-                  onClick={() => {
+                  onClick={() => handleNavigation(() => {
                     setIsDropdownOpen(false);
                     logout();
-                  }}
+                  })}
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors text-left font-medium"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
