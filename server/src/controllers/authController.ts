@@ -89,7 +89,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const logout = (req: Request, res: Response): void => {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none'
+  });
+
   res.status(200).json({ success: true, message: 'Logged out' });
 };
 
