@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface User {
   id: string;
@@ -20,10 +21,12 @@ interface AuthState {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: false,
-  isCheckingAuth: true,
-  user: null,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      isAuthenticated: false,
+      isCheckingAuth: true,
+      user: null,
   login: async (email, password) => {
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
@@ -78,6 +81,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   checkAuth: async () => {
     try {
+      if (!navigator.onLine) {
+        // If offline, trust the persisted state from Zustand
+        set({ isCheckingAuth: false });
+        return;
+      }
       set({ isCheckingAuth: true });
       const res = await fetch(`${API_URL}/auth/me`, {
         credentials: 'include'
@@ -89,7 +97,15 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ isAuthenticated: false, user: null, isCheckingAuth: false });
       }
     } catch (e) {
-      set({ isAuthenticated: false, user: null, isCheckingAuth: false });
+      console.warn('Network error during checkAuth. Trusting persisted state:', e);
+      set({ isCheckingAuth: false });
     }
   }
-}));
+    }),
+    {
+      name: 'auth-storage', // unique name for the item in localStorage
+      // We only persist 'isAuthenticated' and 'user'. 'isCheckingAuth' should not be persisted.
+      partialize: (state) => ({ isAuthenticated: state.isAuthenticated, user: state.user }),
+    }
+  )
+);
