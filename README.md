@@ -32,11 +32,12 @@ A full-stack, **offline-first daily puzzle game** where players solve two unique
 
 - **Two Daily Puzzles** — A 9×9 Path/Maze puzzle and a 9×9 Sudoku, refreshing every calendar day.
 - **Deterministic Generation** — Puzzles are seeded from the date, so every player gets the same puzzle on the same day. Past puzzles can be replayed at any time.
-- **Offline First** — All puzzle progress is saved to browser IndexedDB on every move. Completed results are queued and synced to the server when the device comes back online.
+- **Offline-First & PWA Support** — The frontend acts as a Progressive Web App, caching static assets and shells. All puzzle progress is saved to browser IndexedDB so you can open the app and play on an airplane. Completed results queue locally and sync to the server when the device comes back online.
+- **Smart Offline UI** — The app listens for connection drops to display a custom dismissible offline banner and intercept login attempts. If offline, the login screen converts to a "You are Offline" prompt guiding players toward Guest Mode.
 - **Hint System** — Players may use up to 2 hints per puzzle, each costing 10 points.
 - **Streak Tracking** — A daily streak counter rewards consecutive days of solving; streaks are persisted in localStorage per user.
 - **Activity Heatmap** — A GitHub-style contribution heatmap on the profile page visualises daily solve history across the full year.
-- **Authentication** — JWT-based cookie authentication with register, login, logout, and a guest mode (no data persisted server-side for guests).
+- **Authentication & Guest Mode** — JWT-based cookie authentication with register, login, logout, and an offline-capable Guest Mode (seamlessly allowing offline play without needing to authenticate with an unreachable server).
 - **Anti-Cheat Validation** — The server rejects scores with future dates, impossibly fast completion times (< 5 s), or scores outside a valid range.
 - **Global Modal System** — A centralised modal handles success, error, confirmation, and celebration dialogs across the app.
 
@@ -175,7 +176,8 @@ DailyPuzzle/
 ### Pages
 
 #### `AuthPage.tsx`
-The authentication entry point. Contains a toggling Login / Register form backed by `useAuthStore`. On success, the user is redirected to `/`. A **Guest** button bypasses auth entirely and creates a temporary in-memory guest identity (no server calls, no data persistence).
+The authentication entry point. Contains a toggling Login / Register form backed by `useAuthStore`. On success, the user is redirected to `/`. A **Guest** button bypasses auth entirely and creates a temporary in-memory guest identity.
+**If Offline:** The standard login form is hidden. A custom UI informs the user that they are offline and provides a single call-to-action to continue playing as a Guest. If the node backend is down but the Wi-Fi is on, any "Failed to fetch" errors trigger a global modal prompting the user to play as a Guest.
 
 #### `Dashboard.tsx`
 Displays a 7-day rolling calendar centered on today (3 days back, today, 3 days forward). Each card shows the date and its status: `PAST` (playable, unscored), `TODAY` (highlighted, scored), or `LOCKED` (future, not clickable). Clicking any unlocked date navigates to `/daily/:date`.
