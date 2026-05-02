@@ -10,10 +10,7 @@ interface User {
 
 interface AuthState {
   isAuthenticated: boolean;
-  hasHydrated: boolean;
   isCheckingAuth: boolean;
-  isProfileSyncing: boolean;
-  lastServerReachableAt: number | null;
   user: User | null;
   login: (email: string, password?: string) => Promise<void>;
   register: (email: string, password?: string) => Promise<void>;
@@ -28,10 +25,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       isAuthenticated: false,
-      hasHydrated: false,
       isCheckingAuth: true,
-      isProfileSyncing: false,
-      lastServerReachableAt: null,
       user: null,
       login: async (email, password) => {
         const res = await fetch(`${API_URL}/auth/login`, {
@@ -46,10 +40,7 @@ export const useAuthStore = create<AuthState>()(
 
         set({
           isAuthenticated: true,
-          user: data.user,
-          isCheckingAuth: false,
-          isProfileSyncing: false,
-          lastServerReachableAt: Date.now()
+          user: data.user
         });
       },
       register: async (email, password) => {
@@ -65,17 +56,12 @@ export const useAuthStore = create<AuthState>()(
 
         set({
           isAuthenticated: true,
-          user: data.user,
-          isCheckingAuth: false,
-          isProfileSyncing: false,
-          lastServerReachableAt: Date.now()
+          user: data.user
         });
       },
       loginAsGuest: () =>
         set({
           isAuthenticated: true,
-          isCheckingAuth: false,
-          isProfileSyncing: false,
           user: {
             id: `guest_${Date.now()}`,
             email: 'Guest',
@@ -95,45 +81,38 @@ export const useAuthStore = create<AuthState>()(
 
         set({
           isAuthenticated: false,
-          user: null,
-          isCheckingAuth: false,
-          isProfileSyncing: false
+          user: null
         });
       },
       checkAuth: async (options) => {
         const { isAuthenticated, user } = get();
+        const isBackground = options?.background ?? (isAuthenticated && !!user && !user.isGuest);
 
         if (user?.isGuest) {
-          set({ isCheckingAuth: false, isProfileSyncing: false });
+          set({ isCheckingAuth: false });
           return;
         }
 
         try {
           if (!navigator.onLine) {
-            // If offline, trust the persisted state from Zustand.
-            set({ isCheckingAuth: false, isProfileSyncing: false });
+            set({ isCheckingAuth: false });
             return;
           }
 
-          const shouldSyncInBackground = options?.background ?? (isAuthenticated && !!user);
-          set({
-            isCheckingAuth: !shouldSyncInBackground,
-            isProfileSyncing: shouldSyncInBackground
-          });
+          if (!isBackground) {
+            set({ isCheckingAuth: true });
+          }
 
           const res = await fetch(`${API_URL}/auth/me`, {
             credentials: 'include'
           });
           const data = await res.json();
-          const lastServerReachableAt = Date.now();
 
           if (res.ok && data.user) {
             set({
               isAuthenticated: true,
               user: data.user,
-              isCheckingAuth: false,
-              isProfileSyncing: false,
-              lastServerReachableAt
+              isCheckingAuth: false
             });
             return;
           }
@@ -141,21 +120,16 @@ export const useAuthStore = create<AuthState>()(
           set({
             isAuthenticated: false,
             user: null,
-            isCheckingAuth: false,
-            isProfileSyncing: false,
-            lastServerReachableAt
+            isCheckingAuth: false
           });
         } catch (e) {
           console.warn('Network error during checkAuth. Trusting persisted state:', e);
-          set({ isCheckingAuth: false, isProfileSyncing: false });
+          set({ isCheckingAuth: false });
         }
       }
     }),
     {
       name: 'auth-storage',
-      onRehydrateStorage: () => () => {
-        useAuthStore.setState({ hasHydrated: true });
-      },
       // We only persist 'isAuthenticated' and 'user'. 'isCheckingAuth' should not be persisted.
       partialize: (state) => ({ isAuthenticated: state.isAuthenticated, user: state.user }),
     }

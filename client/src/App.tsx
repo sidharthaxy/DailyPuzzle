@@ -20,32 +20,53 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
-  const {
-    user,
-    checkAuth,
-    isAuthenticated,
-    isCheckingAuth,
-    hasHydrated,
-    isProfileSyncing,
-    lastServerReachableAt
-  } = useAuthStore();
+  const { user, checkAuth, isAuthenticated, isCheckingAuth } = useAuthStore();
   const { loadStreak } = useStreakStore();
   const isOnline = useNetwork();
+  const [hasHydrated, setHasHydrated] = useState(useAuthStore.persist.hasHydrated());
+  const [isProfileSyncing, setIsProfileSyncing] = useState(false);
   const [dismissOfflineBanner, setDismissOfflineBanner] = useState(false);
   const [dismissSyncBanner, setDismissSyncBanner] = useState(false);
-  const hasPersistedSession = isAuthenticated && !!user;
-  const showInitialLoading = !hasHydrated || (isCheckingAuth && !hasPersistedSession);
+  const hasPersistedSession = hasHydrated && isAuthenticated && !!user;
+  const showInitialLoading = isCheckingAuth && !hasPersistedSession;
   const showOfflineBanner = !isOnline && !dismissOfflineBanner;
   const showProfileSyncBanner =
     isOnline && isProfileSyncing && isAuthenticated && !!user && !user.isGuest && !dismissSyncBanner;
+
+  useEffect(() => {
+    const unsubscribeHydrate = useAuthStore.persist.onHydrate(() => setHasHydrated(false));
+    const unsubscribeFinishHydration = useAuthStore.persist.onFinishHydration(() => setHasHydrated(true));
+
+    setHasHydrated(useAuthStore.persist.hasHydrated());
+
+    return () => {
+      unsubscribeHydrate();
+      unsubscribeFinishHydration();
+    };
+  }, []);
 
   useEffect(() => {
     if (!hasHydrated) {
       return;
     }
 
-    checkAuth();
-  }, [checkAuth, hasHydrated, isOnline]);
+    const shouldSyncInBackground = isOnline && isAuthenticated && !!user && !user.isGuest;
+    let cancelled = false;
+
+    if (shouldSyncInBackground) {
+      setIsProfileSyncing(true);
+    }
+
+    checkAuth({ background: shouldSyncInBackground }).finally(() => {
+      if (!cancelled) {
+        setIsProfileSyncing(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [checkAuth, hasHydrated, isOnline, isAuthenticated, user?.id, user?.isGuest]);
 
   useEffect(() => {
     if (user) {
@@ -56,22 +77,17 @@ function App() {
   useEffect(() => {
     if (isOnline) {
       setDismissOfflineBanner(false);
+      if (user) {
+        syncOfflineResults();
+      }
     }
-  }, [isOnline]);
+  }, [isOnline, user]);
 
   useEffect(() => {
     if (isProfileSyncing) {
       setDismissSyncBanner(false);
     }
   }, [isProfileSyncing]);
-
-  useEffect(() => {
-    if (!isOnline || !user || user.isGuest || !lastServerReachableAt) {
-      return;
-    }
-
-    syncOfflineResults();
-  }, [isOnline, lastServerReachableAt, user]);
 
   if (showInitialLoading) {
     return (
