@@ -20,14 +20,32 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
-  const { user, checkAuth, isAuthenticated, isCheckingAuth } = useAuthStore();
+  const {
+    user,
+    checkAuth,
+    isAuthenticated,
+    isCheckingAuth,
+    hasHydrated,
+    isProfileSyncing,
+    lastServerReachableAt
+  } = useAuthStore();
   const { loadStreak } = useStreakStore();
   const isOnline = useNetwork();
   const [dismissOfflineBanner, setDismissOfflineBanner] = useState(false);
+  const [dismissSyncBanner, setDismissSyncBanner] = useState(false);
+  const hasPersistedSession = isAuthenticated && !!user;
+  const showInitialLoading = !hasHydrated || (isCheckingAuth && !hasPersistedSession);
+  const showOfflineBanner = !isOnline && !dismissOfflineBanner;
+  const showProfileSyncBanner =
+    isOnline && isProfileSyncing && isAuthenticated && !!user && !user.isGuest && !dismissSyncBanner;
 
   useEffect(() => {
+    if (!hasHydrated) {
+      return;
+    }
+
     checkAuth();
-  }, [checkAuth]);
+  }, [checkAuth, hasHydrated, isOnline]);
 
   useEffect(() => {
     if (user) {
@@ -38,13 +56,24 @@ function App() {
   useEffect(() => {
     if (isOnline) {
       setDismissOfflineBanner(false);
-      if (user) {
-        syncOfflineResults();
-      }
     }
-  }, [isOnline, user]);
+  }, [isOnline]);
 
-  if (isCheckingAuth) {
+  useEffect(() => {
+    if (isProfileSyncing) {
+      setDismissSyncBanner(false);
+    }
+  }, [isProfileSyncing]);
+
+  useEffect(() => {
+    if (!isOnline || !user || user.isGuest || !lastServerReachableAt) {
+      return;
+    }
+
+    syncOfflineResults();
+  }, [isOnline, lastServerReachableAt, user]);
+
+  if (showInitialLoading) {
     return (
       <div className="min-h-screen bg-brand-100 flex items-center justify-center relative overflow-hidden">
         {/* Animated Background blobs */}
@@ -114,8 +143,9 @@ function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-brand-100 text-brand-900 flex flex-col font-sans transition-colors duration-200">
         <AnimatePresence>
-          {!isOnline && !dismissOfflineBanner && (
+          {showOfflineBanner && (
             <motion.div
+              key="offline-banner"
               initial={{ y: -100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -100, opacity: 0 }}
@@ -134,6 +164,40 @@ function App() {
               >
                 OK
               </button>
+            </motion.div>
+          )}
+          {showProfileSyncBanner && (
+            <motion.div
+              key="profile-sync-banner"
+              initial={{ y: -100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -100, opacity: 0 }}
+              className="fixed top-0 left-0 right-0 z-[9998] border-b border-brand-blue-200/80 bg-gradient-to-r from-white via-brand-blue-50 to-white px-4 py-3 text-brand-blue-900 shadow-lg backdrop-blur-sm"
+            >
+              <div className="mx-auto flex max-w-5xl items-center gap-3">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-brand-blue-100 text-brand-blue-600 shadow-sm" aria-label="Sync in progress" role="status">
+                  <div className="flex items-center gap-1.5">
+                    {[0, 1, 2].map((i) => (
+                      <motion.span
+                        key={i}
+                        className="h-2.5 w-2.5 rounded-full bg-current"
+                        animate={{ y: ['0%', '-45%', '0%'], opacity: [0.45, 1, 0.45] }}
+                        transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15, ease: 'easeInOut' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold tracking-wide">Syncing your profile. This might take some time.</p>
+                </div>
+                <button
+                  onClick={() => setDismissSyncBanner(true)}
+                  className="flex-shrink-0 rounded bg-brand-blue-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-brand-blue-700"
+                  aria-label="Dismiss sync status"
+                >
+                  OK
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
