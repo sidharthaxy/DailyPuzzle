@@ -192,7 +192,7 @@ export const PuzzlePage = () => {
                 {puzzleType === 'path' ? renderPathGrid() : renderSudokuGrid()}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 'clamp(20px, 5vw, 50px)', marginTop: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'nowrap', gap: 'clamp(10px, 3vw, 30px)', marginTop: 20 }}>
                 {puzzleType === 'path' ? (
                     <button
                         disabled={isComplete}

@@ -36,6 +36,14 @@ export const useStreakStore = create<StreakState>((set, get) => ({
             const parsed = JSON.parse(initialStreakStr);
             initialStreak = parsed.currentStreak || 0;
             initialLastDate = parsed.lastSolvedDate || null;
+            
+            if (initialLastDate) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (initialLastDate !== todayStr && !isYesterday(initialLastDate, todayStr)) {
+                    // Streak has expired since they missed yesterday
+                    initialStreak = 0;
+                }
+            }
         } catch(e) {}
     }
     set({ currentStreak: initialStreak, lastSolvedDate: initialLastDate });

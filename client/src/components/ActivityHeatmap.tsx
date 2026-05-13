@@ -163,24 +163,8 @@ const ActivityHeatmap: React.FC = () => {
   return (
     <div className="flex flex-col md:flex-row gap-6">
       <div className="flex-1 flex flex-col space-y-2 overflow-hidden">
-        {/* Heatmap header: Month labels */}
-        <div className="relative h-6 w-full hidden sm:block">
-          {monthLabels.map((label, i) => {
-            const numNewMonthsPassed = monthLabels.filter(l => l.weekIndex > 0 && l.weekIndex <= label.weekIndex).length;
-            return (
-              <div 
-                key={i} 
-                className="absolute text-xs text-gray-500 dark:text-gray-400"
-                style={{ left: `${label.weekIndex * 20 + numNewMonthsPassed * 16}px` }} 
-              >
-                {label.name}
-              </div>
-            );
-          })}
-        </div>
-
         {/* Heatmap Area */}
-        <div className="flex gap-1 overflow-x-auto pb-4 custom-scrollbar">
+        <div className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
           {weeks.map((week, weekIndex) => {
             const isNewMonth = weekIndex > 0 && monthLabels.some(l => l.weekIndex === weekIndex);
             return (
@@ -197,6 +181,22 @@ const ActivityHeatmap: React.FC = () => {
                     }}
                   />
                 ))}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Heatmap footer: Month labels */}
+        <div className="relative h-6 w-full hidden sm:block mb-2 mt-1">
+          {monthLabels.map((label, i) => {
+            const numNewMonthsPassed = monthLabels.filter(l => l.weekIndex > 0 && l.weekIndex <= label.weekIndex).length;
+            return (
+              <div 
+                key={i} 
+                className="absolute text-xs text-gray-500 dark:text-gray-400"
+                style={{ left: `${label.weekIndex * 20 + numNewMonthsPassed * 16}px` }} 
+              >
+                {label.name}
               </div>
             );
           })}

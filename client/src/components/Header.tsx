@@ -87,6 +87,7 @@ export const Header = () => {
                 </div>
               </div>
               
+              {/* Theme section commented out 
               <div className="py-1">
                 <button 
                   onClick={() => {
@@ -100,6 +101,7 @@ export const Header = () => {
                   Theme
                 </button>
               </div>
+              */}
               
               <div className="py-1 border-t border-gray-100">
                 <button 
